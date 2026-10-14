@@ -1,255 +1,136 @@
-# AI Shopping Agent
+# Prompt2Buy
 
-An AI-powered agentic commerce system built for the **Razorpay AI Buildathon — Track 01: AI Growth & Agentic Commerce**.
+### Agentic Shopping Assistant
 
-The system allows users to shop using natural language. The AI Buyer can discover products, maintain a shopping cart, prepare an order, request explicit user confirmation before checkout, initiate a Razorpay Test Mode payment, and rely on server-side verification before an order is marked as paid.
+*From prompt to payment.*
 
-The design focuses on making every money action:
+Prompt2Buy is a shopping agent you talk to. Tell it what you want, it searches a merchant catalog, manages your cart, and takes you through a Razorpay Test Mode payment, but only after you explicitly say yes.
 
-- Explainable
-- Bounded
-- Gated
-- Verifiable
-- Auditable
+Built for the **Razorpay AI Buildathon, Track 01: AI Growth & Agentic Commerce**.
 
 ---
 
-## Overview
+## What it does
 
-Traditional e-commerce requires users to manually search for products, inspect details, manage a cart, and navigate through multiple checkout steps.
-
-This project introduces an **AI Buyer Agent** that acts as a conversational layer over a merchant commerce system.
-
-A user can interact with the system using natural language:
-
-> I need wireless headphones under ₹1000
-
-The AI searches the real merchant catalog through MCP, recommends suitable products, and maintains conversation context.
-
-The user can then say:
-
-> Add that to my cart
-
-The agent resolves the reference from the conversation and performs the cart operation.
-
-When the user wants to purchase, the agent presents the final cart and total and requires explicit confirmation before initiating the payment flow.
-
----
-
-## Key Features
-
-### Natural Language Shopping
-
-Users can describe what they want without knowing product IDs or backend APIs.
-
-Examples:
-
-- "Find wireless headphones under ₹1000"
-- "Show me something cheaper"
-- "Tell me more about that product"
-- "Add that to my cart"
-- "What's in my cart?"
-- "Checkout"
-
-The AI uses merchant tools to obtain real catalog, cart, and order information rather than inventing values.
-
-### Conversational Context
-
-The Buyer Agent maintains conversation history and can resolve references such as:
-
-- "that"
-- "this product"
-- "add it"
-- "the second one"
-
-This allows the shopping experience to remain conversational without requiring users to repeatedly provide internal product identifiers.
-
-### MCP-Based Tool Architecture
-
-The AI does not directly manipulate the merchant system.
-
-Instead, the Buyer Agent communicates with an **MCP server**, which exposes controlled commerce operations.
-
-Current MCP tools include:
-
-- `search_catalog`
-- `get_product_details`
-- `start_cart`
-- `add_to_cart`
-- `get_cart`
-- `checkout`
-- `cancel_order`
-- `get_audit_log`
-- `get_order_status`
-
-The MCP layer provides a controlled boundary between the AI agent and the merchant backend.
-
-### Explicit Human Confirmation
-
-Checkout requires an explicit human confirmation.
-
-Before calling the checkout operation, the agent presents:
-
-- Final cart contents
-- Quantities
-- Total amount
-
-The user must explicitly confirm before the payment flow is initiated.
-
-### Spend Cap
-
-The merchant backend enforces a configured spending limit.
-
-If the checkout amount exceeds the configured spend cap, checkout fails instead of allowing the payment process to continue.
-
-This provides a deterministic financial boundary independent of the AI's response.
-
-### Razorpay Test Mode
-
-The project integrates **Razorpay Test Mode** for the payment flow.
-
-The process is:
-
-1. User confirms the final purchase.
-2. Buyer Agent calls the MCP checkout tool.
-3. MCP forwards the request to the merchant backend.
-4. Merchant backend creates the local order.
-5. Merchant backend creates a Razorpay payment order.
-6. The user completes payment through Razorpay Checkout.
-7. Payment information is returned to the merchant backend.
-8. The merchant backend verifies the payment server-side.
-9. Only after successful verification is the local order marked `PAID`.
-
-Creating a Razorpay order does **not** mean that the customer has paid.
-
----
-
-## Server-Side Payment Verification
-
-Payment verification is performed by the merchant backend rather than trusting the browser.
-
-The verification process checks:
-
-- The local order exists.
-- The Razorpay order ID matches the expected order.
-- The Razorpay payment signature is valid.
-- The payment belongs to the expected Razorpay order.
-- The payment amount matches the local order amount.
-- The payment status is `captured`.
-
-Only after these checks succeed is the local order transitioned to:
+Instead of clicking through search, product pages, cart and checkout, you just chat:
 
 ```text
-PAID
+You:    I need wireless headphones under ₹1000
+Agent:  (searches the catalog, suggests a few options)
+You:    Add the second one to my cart
+Agent:  (resolves "the second one" from the conversation and adds it)
+You:    Checkout
+Agent:  Here's your cart and total. Confirm to proceed?
+```
 
-Order Lifecycle
+The agent never makes up prices or stock. Everything it says about products, carts and orders comes from tool calls to the merchant backend.
 
-Orders use controlled states to ensure that payment and order status remain consistent.
+It keeps conversation history, so references like "that", "this one" or "add it" work without you repeating product IDs.
 
-PENDING
-   |
-   | Successful server-side payment verification
-   v
-PAID
+---
 
-Pending orders can also be cancelled:
+## The rule I built around: the AI never moves money on its own
 
-PENDING
-   |
-   | Cancellation
-   v
-CANCELLED
+Letting an LLM near a payment flow is risky, so the safety checks live in the backend, not in the prompt.
 
-Cancellation is intentionally restricted to unpaid pending orders.
+- **Explicit confirmation.** Before checkout, the agent shows the final cart, quantities and total. Nothing happens until the user confirms.
+- **Spend cap.** The merchant backend enforces a configured limit. If the total exceeds it, checkout fails, no matter what the model says.
+- **Server-side payment verification.** The browser's word is never trusted. An order only becomes `PAID` after the backend verifies the payment itself.
+- **Audit log.** Every state-changing action is recorded with a timestamp, so you can trace what happened and when.
 
-A paid order is not cancelled through this operation because a paid order would require a separate refund workflow.
+---
 
-Audit Trail
+## How a payment works
 
-The merchant backend maintains an audit trail of state-changing operations.
+1. The user confirms the cart.
+2. The buyer agent calls the MCP `checkout` tool.
+3. The MCP server forwards the request to the merchant backend.
+4. The backend creates a local order and a Razorpay order.
+5. The user pays through Razorpay Checkout.
+6. Razorpay returns the payment details to the backend.
+7. The backend verifies them, and only then marks the order `PAID`.
 
-The audit log records:
+Creating a Razorpay order doesn't mean the customer has paid. That's why step 7 exists.
 
-Timestamp
-Entity
-Action
-Associated data
+### What the backend checks before marking an order paid
 
-Examples include:
+- The local order exists
+- The Razorpay order ID matches the one it created
+- The payment signature is valid
+- The payment belongs to that Razorpay order
+- The paid amount matches the local order amount
+- The payment status is `captured`
 
-Order created
-Razorpay order created
-Order updated -> PAID
-Order cancelled
+### Order states
 
-The audit log can be retrieved through the merchant API and exposed to the AI through the get_audit_log MCP tool.
+```text
+PENDING --(payment verified)--> PAID
+PENDING --(cancelled)---------> CANCELLED
+```
 
-This provides traceability for important commerce and payment state transitions.
+Only unpaid `PENDING` orders can be cancelled. Cancelling a paid order would need a proper refund flow, which this project doesn't implement.
 
-System Architecture
-                         USER
-                           |
-                           v
-                  +----------------+
-                  |   AI Buyer UI  |
-                  | Browser / Chat |
-                  +----------------+
-                           |
-                           v
-                  +----------------+
-                  | buyer-agent    |
-                  |    api.py      |
-                  |    :9000       |
-                  +----------------+
-                           |
-                           v
-                  +----------------+
-                  |  Buyer Agent   |
-                  |  Local Gemma   |
-                  +----------------+
-                           |
-                           | MCP
-                           v
-                  +----------------+
-                  |   MCP Server   |
-                  |    server.py   |
-                  +----------------+
-                           |
-                           | HTTP
-                           v
-                  +----------------+
-                  | Merchant       |
-                  | Backend :8000  |
-                  +----------------+
-                    /      |       \
-                   /       |        \
-                  v        v         v
-             Catalog     Cart      Orders
-                                      |
-                                      v
-                                    Audit
-                                      |
-                                      v
-                              Razorpay Client
-                                      |
-                                      v
-                              Razorpay Test Mode
-                                      |
-                                      v
-                              Razorpay Checkout
-                                      |
-                                      v
-                           Server-side Verification
-                                      |
-                                      v
-                                 Order -> PAID
-Project Structure
-AI-Buyer-Agent/
-│
+---
+
+## MCP tools
+
+The agent doesn't touch the merchant system directly. It goes through an MCP server that exposes a fixed set of operations:
+
+| Tool | Purpose |
+|------|---------|
+| `search_catalog` | Search products |
+| `get_product_details` | Get details for one product |
+| `start_cart` | Create a cart |
+| `add_to_cart` | Add an item |
+| `get_cart` | View the cart |
+| `checkout` | Create the order and start payment |
+| `cancel_order` | Cancel an unpaid order |
+| `get_order_status` | Check an order's status |
+| `get_audit_log` | Read the audit trail |
+
+---
+
+## Architecture
+
+```text
+User
+  |
+  v
+Chat UI (browser)
+  |
+  v
+buyer-agent API (:9000)
+  |
+  v
+Buyer Agent (local Gemma)
+  |
+  | MCP
+  v
+MCP Server
+  |
+  | HTTP
+  v
+Merchant Backend (:8000)
+  |-- Catalog
+  |-- Cart
+  |-- Orders --> Audit log
+  |
+  v
+Razorpay (Test Mode) --> Razorpay Checkout
+  |
+  v
+Server-side verification --> Order marked PAID
+```
+
+---
+
+## Project structure
+
+```text
+prompt2buy/
 ├── buyer-agent/
 │   ├── api.py
 │   ├── agent.py
-│   │
 │   └── static/
 │       ├── index.html
 │       ├── style.css
@@ -267,10 +148,18 @@ AI-Buyer-Agent/
 │   ├── models.py
 │   ├── orders.py
 │   ├── razorpay_client.py
-│   │
 │   └── data/
 │       └── catalog.json
 │
 ├── .env
 ├── .gitignore
 └── README.md
+```
+
+---
+
+## Limitations
+
+- Payments run in **Razorpay Test Mode** only, so no real money moves.
+- No refund flow, so paid orders can't be cancelled.
+- The catalog is a static JSON file, not a live merchant inventory.
