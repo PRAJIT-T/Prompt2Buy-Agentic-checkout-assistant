@@ -10,6 +10,39 @@ Built for the **Razorpay AI Buildathon, Track 01: AI Growth & Agentic Commerce**
 
 ---
 
+## Running it locally
+
+The buyer agent and merchant backend run as two separate services. Open two terminals from the project root.
+
+### Terminal 1: buyer agent and chat UI
+
+```powershell
+cd buyer-agent
+python -m uvicorn api:app --reload --port 9000
+```
+
+Open [http://127.0.0.1:9000](http://127.0.0.1:9000) in the browser.
+
+### Terminal 2: merchant backend
+
+```powershell
+cd merchant-backend
+python -m uvicorn api:app --reload --port 8000
+```
+
+The buyer agent expects the merchant backend on port `8000`. Start the merchant backend before using catalog, cart, checkout, or return features.
+
+Install the dependencies once in the Python environment you are using:
+
+```powershell
+pip install -r buyer-agent/requirements.txt
+pip install -r mcp-server/requirements.txt
+```
+
+The merchant backend uses the dependencies listed above and does not need a separate requirements file. The local model endpoint and Razorpay test credentials are configured through environment variables. Keep those values in `.env` files and never commit them.
+
+---
+
 ## What it does
 
 Instead of clicking through search, product pages, cart and checkout, you just chat:
@@ -26,6 +59,8 @@ Agent:  Here's your cart and total. Confirm to proceed?
 The agent never makes up prices or stock. Everything it says about products, carts and orders comes from tool calls to the merchant backend.
 
 It keeps conversation history, so references like "that", "this one" or "add it" work without you repeating product IDs.
+
+The refreshed interface keeps the same agent flow while adding a catalog view with category filters, product-specific assistant prompts, a clearer cart action, and a demo return/refund flow. The UI uses CSS-drawn controls rather than emoji icons so the product experience stays consistent across platforms.
 
 ---
 
@@ -134,12 +169,14 @@ prompt2buy/
 │   └── static/
 │       ├── index.html
 │       ├── style.css
-│       └── app.js
+│       ├── app.js
+│       └── pictures/
 │
 ├── mcp-server/
 │   └── server.py
 │
 ├── merchant-backend/
+│   ├── .env
 │   ├── api.py
 │   ├── audit.py
 │   ├── cart.py
@@ -147,13 +184,13 @@ prompt2buy/
 │   ├── config.py
 │   ├── models.py
 │   ├── orders.py
+│   ├── payment_server.py
 │   ├── razorpay_client.py
 │   └── data/
 │       └── catalog.json
 │
-├── .env
-├── .gitignore
-└── README.md
+├── README_rp.md
+└── .gitignore
 ```
 
 ---
@@ -163,3 +200,4 @@ prompt2buy/
 - Payments run in **Razorpay Test Mode** only, so no real money moves.
 - No refund flow, so paid orders can't be cancelled.
 - The catalog is a static JSON file, not a live merchant inventory.
+- The return/refund controls are demo-only and do not move real money.
