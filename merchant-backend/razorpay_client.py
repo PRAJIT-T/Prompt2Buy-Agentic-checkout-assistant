@@ -1,7 +1,7 @@
 import os
 import razorpay
 import uuid
-from config import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET
+from config import RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, require_razorpay_credentials
 
 class RazorpayClient:
     """
@@ -9,9 +9,8 @@ class RazorpayClient:
     This class encapsulates all external API calls.
     """
     def __init__(self):
-        """
-        Initializes the Razorpay client with API keys.
-        """
+        """Initialize the gateway client only when credentials are configured."""
+        require_razorpay_credentials()
         self.client = razorpay.Client(
             auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)
         )
@@ -37,8 +36,14 @@ class RazorpayClient:
             )
             return order
         except Exception as e:
-            print(f"Error creating Razorpay order: {e}")
-            return {"error": str(e)}
+            # Keep provider diagnostics in the backend terminal, not the chat.
+            print(f"Razorpay order creation failed ({type(e).__name__}): {e}")
+            return {
+                "error": (
+                    "Razorpay could not create the payment order. Check that "
+                    "the Key ID and Key Secret are a matching Test Mode pair."
+                )
+            }
 
     def verify_payment_signature(
         self,

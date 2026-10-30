@@ -4,60 +4,106 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>ShoppingBuddy</title>
+    <title>ShoppingBuddy | AI shopping assistant</title>
 
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/style.css?v=5">
 </head>
 
 <body>
 
     <div class="app">
-
         <header class="header">
-            <div>
-                <h1>ShoppingBuddy </h1>
-                <p>Your AI shopping assistant</p>
+            <a class="brand" href="/" aria-label="ShoppingBuddy home">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span><strong>ShoppingBuddy</strong><small>AI-powered personal shopping</small></span>
+            </a>
+            <div class="header-context" aria-hidden="true">
+                <span class="header-context-dot"></span>
+                <span>Discover</span><i>/</i><span>Compare</span><i>/</i><span>Decide</span>
             </div>
-
-            <div class="status">
-                <span class="status-dot"></span>
-                Online
+            <div class="header-actions">
+                <span class="status"><span class="status-dot"></span>Assistant online</span>
+                <button class="icon-button" id="cartToggle" type="button" aria-label="Ask the assistant to show your cart" title="Show my cart">
+                    <span class="cart-button-icon" aria-hidden="true"></span>
+                    <span class="cart-button-label">View cart</span>
+                </button>
             </div>
         </header>
 
-
-        <main id="chat" class="chat">
-
-            <div class="message ai">
-                <div class="avatar">AI</div>
-
-                <div class="bubble">
-"Hey there! I’m your AI Buying Assistant. I'm here to help you find exactly what you need by searching through millions of products in seconds. What are we looking for today?"
-
-                    <br><br>
-
-                    Tell me what you're looking for and I'll help you find it.
+        <main class="workspace">
+            <section class="chat-panel" aria-label="Shopping assistant">
+                <div class="chat-intro">
+                    <span class="eyebrow">Your personal shopper</span>
+                    <div class="hero-title">
+                        <h1>Find something<br><em>worth keeping.</em></h1>
+                        <img src="/static/pictures/3d-shopping_cart.png" alt="Shopping cart">
+                    </div>
+                    <p>Tell me what you are looking for. I’ll search the catalog, compare options, and keep your cart organized.</p>
+                    <div class="quick-prompts" aria-label="Suggested searches">
+                        <button class="prompt-chip" type="button" data-prompt="Find wireless headphones under ₹1000">Noise-cancelling audio</button>
+                        <button class="prompt-chip" type="button" data-prompt="Show me something for a home office">Home office upgrades</button>
+                        <button class="prompt-chip" type="button" data-prompt="Find a smart fitness watch">Daily wellness</button>
+                    </div>
                 </div>
-            </div>
 
+                <div class="chat-box">
+                    <div class="chat-box-heading">
+                        <div>
+                            <span class="eyebrow">Shopping assistant</span>
+                            <h2>Ask. Explore. Find your next favourite.</h2>
+                        </div>
+                        <span class="chat-live">Live</span>
+                    </div>
+                    <div id="chat" class="chat">
+                        <div class="message ai">
+                            <div class="avatar">S</div>
+                            <div class="bubble">Hi, I’m your ShoppingBuddy. What are we hunting for today?</div>
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <div class="input-wrap"><input id="messageInput" type="text" aria-label="What are you looking for?" placeholder="Ask me to find a product..." autocomplete="off"><span class="pixel-caret" aria-hidden="true"></span></div>
+                        <button id="sendButton" class="send-button" type="button" aria-label="Search the catalog">Search</button>
+                    </div>
+                </div>
+
+                <p class="privacy-note">ShoppingBuddy searches your merchant catalog. Checkout always needs your confirmation.</p>
+            </section>
+
+            <aside class="shopping-panel" aria-label="Featured products and cart">
+                <div class="panel-heading"><div><span class="eyebrow">Curated for you</span><h2>Good things,<br>well chosen.</h2></div></div>
+                <div class="feature-card"><img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85" alt="Premium wireless headphones"><div class="feature-copy"><span>Featured find</span><strong>Premium sound<br>for every commute.</strong><button class="image-prompt" type="button" data-prompt="Tell me about the Premium Wireless Headphones">Explore headphones</button></div></div>
+                <section class="catalog-section" aria-label="Product catalog">
+                    <div class="catalog-section-heading">
+                        <div><span class="eyebrow">Small, curated catalog</span><h3>Shop by category</h3></div>
+                        <span id="catalogCount" class="catalog-count">Loading</span>
+                    </div>
+                    <div id="categoryFilters" class="category-filters" aria-label="Filter products by category"></div>
+                    <div id="productGrid" class="product-grid" aria-live="polite"><p class="catalog-message">Loading products</p></div>
+                </section>
+                <button class="cart-card" id="cartCard" type="button" aria-label="Ask the assistant to show your cart"><div class="cart-art" aria-hidden="true"></div><div><span class="eyebrow">Your cart</span><h3>See what you’ve picked</h3><p>Open your cart in the assistant and review your picks before checkout.</p></div><span class="cart-arrow">View</span></button>
+                <section class="return-card" aria-label="Demo returns">
+                    <div class="return-card-heading"><span class="eyebrow">After checkout</span><h3>Try a product return</h3><p>Demo only — this will not issue a real Razorpay refund.</p></div>
+                    <form id="returnForm" class="return-form">
+                        <label for="returnOrderId">Order ID</label>
+                        <input id="returnOrderId" name="orderId" placeholder="ORD-XXXXXXXX" required pattern="ORD-[A-Za-z0-9-]+" autocomplete="off">
+                        <label for="returnReason">Reason</label>
+                        <select id="returnReason" name="reason">
+                            <option value="Changed my mind">Changed my mind</option>
+                            <option value="Item arrived damaged">Item arrived damaged</option>
+                            <option value="Wrong item received">Wrong item received</option>
+                            <option value="Item does not match description">Item does not match description</option>
+                        </select>
+                        <button id="requestReturnButton" class="return-button" type="submit">Request demo return</button>
+                    </form>
+                    <div id="returnResult" class="return-result" role="status" aria-live="polite"></div>
+                    <button id="simulateRefundButton" class="return-button secondary" type="button" hidden>Simulate refund (demo)</button>
+                </section>
+            </aside>
         </main>
-
-
-        <div class="input-area">
-
-            <input
-                id="messageInput"
-                type="text"
-                placeholder="What are you looking for?"
-                autocomplete="off"
-            >
-
-            <button id="sendButton">
-                Send
-            </button>
-
-        </div>
-
     </div>
 
     <script src="/static/app.js"></script>

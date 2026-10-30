@@ -12,6 +12,8 @@ class Product(BaseModel):
     description: str
     price: float
     stock: int
+    category: str = "General"
+    image_url: str = ""
 
 class CartItem(BaseModel):
     """Represents an item within a shopping cart."""

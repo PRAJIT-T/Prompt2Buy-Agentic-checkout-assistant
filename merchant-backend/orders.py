@@ -9,6 +9,63 @@ from audit import log_state_mutation # Assuming audit.py is implemented
 
 _ORDERS = {}
 
+
+# Demo-only return records. These are in memory and reset when the process restarts.
+# The simulated refund endpoint never calls Razorpay and never returns real money.
+_RETURNS = {}
+
+def request_return(order_id: str, reason: str) -> dict:
+    order = get_order(order_id)
+    if order.status != OrderStatus.PAID:
+        raise ValueError(
+            f"Only paid orders can be returned in this demo. Current status: {order.status.value}."
+        )
+
+    existing = next((r for r in _RETURNS.values() if r["order_id"] == order_id), None)
+    if existing is not None:
+        return existing
+
+    now = datetime.now().isoformat()
+    return_id = f"RET-{uuid.uuid4().hex[:8].upper()}"
+    record = {
+        "return_id": return_id,
+        "order_id": order.id,
+        "reason": reason.strip(),
+        "status": "return_requested",
+        "refund_amount": round(order.total_amount, 2),
+        "is_simulation": True,
+        "created_at": now,
+        "updated_at": now,
+    }
+    _RETURNS[return_id] = record
+    log_state_mutation(
+        entity_type="Return",
+        action="RETURN_REQUESTED_DEMO",
+        data=record.copy(),
+    )
+    return record
+
+def simulate_return_refund(return_id: str) -> dict:
+    if return_id not in _RETURNS:
+        raise ValueError(f"Return request '{return_id}' not found.")
+
+    record = _RETURNS[return_id]
+    if record["status"] == "simulated_refunded":
+        return record
+    if record["status"] != "return_requested":
+        raise ValueError(f"Cannot simulate refund from status '{record['status']}'.")
+
+    record["status"] = "simulated_refunded"
+    record["updated_at"] = datetime.now().isoformat()
+    record["message"] = "Demo complete: no real refund was sent to Razorpay."
+    log_state_mutation(
+        entity_type="Return",
+        action="SIMULATED_REFUND",
+        data=record.copy(),
+    )
+    return record
+
+
 def create_new_order(
     cart_state: CartState, 
     customer_info: Dict, 

@@ -1,5 +1,9 @@
 import asyncio
+import os
+import sys
+from pathlib import Path
 
+from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
 from agents import (
@@ -12,6 +16,10 @@ from agents import (
 
 from agents.mcp import MCPServerStdio
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MCP_SERVER_PATH = PROJECT_ROOT / "mcp-server" / "server.py"
+load_dotenv(PROJECT_ROOT / ".env")
 
 # Our model is local, so OpenAI tracing is unnecessary.
 set_tracing_disabled(True)
@@ -38,10 +46,9 @@ class BuyerAgent:
         self.mcp_server = MCPServerStdio(
             name="Merchant MCP Server",
             params={
-                "command": "python",
-                "args": [
-                    "../mcp-server/server.py"
-                ],
+                "command": sys.executable,
+                "args": [str(MCP_SERVER_PATH)],
+                "cwd": str(PROJECT_ROOT),
             },
         )
 
@@ -70,9 +77,9 @@ Cart display:
 - Present the cart as a concise shopping summary.
 - Use this format:
 
-  🛒 Your Cart
+  Your Cart
 
-  • Product Name × quantity — ₹price
+  - Product Name x quantity - ₹price
 
   Total: ₹total
 
@@ -91,10 +98,15 @@ Checkout:
   as paid.
 - If the order is pending payment, clearly tell the user that payment still
   needs to be completed.
+- Format responses as concise, readable Markdown. Use short paragraphs and
+  bullet lists when listing products; do not write dense walls of text.
+- For checkout failures, state that payment could not be started and that no
+  successful payment has been confirmed. Never claim that money was charged
+  unless the merchant backend confirms a captured payment.
 """,
 
             model=OpenAIChatCompletionsModel(
-                model="D:\\models\\gemma-4-E4B-it-qat-UD-Q4_K_XL.gguf",
+                model=os.getenv("LLM_MODEL_ID", "gemma-local"),
                 openai_client=self.client,
             ),
 

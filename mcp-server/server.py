@@ -43,7 +43,10 @@ TOOLS = [
     types.Tool(
         name="search_catalog",
         description=(
-            "Search the merchant product catalog. "
+            "Search the merchant product catalog using natural-language terms. "
+            "The search understands product names, descriptions, categories, "
+            "common category words such as audio and electronics, and singular "
+            "or plural forms such as speaker and speakers. "
             "This is a read-only operation."
         ),
         input_schema={
@@ -51,19 +54,15 @@ TOOLS = [
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Product name or description to search for."
+                    "description": (
+                        "Natural-language product request, such as "
+                        "'speakers' or 'wireless headphones'."
+                    )
                 },
                 "max_price": {
                     "type": "number",
                     "description": "Optional maximum product price."
                 },
-                "size": {
-                    "type": "string",
-                    "description": (
-                        "Optional size filter. "
-                        "The current merchant catalog does not contain size data."
-                    )
-                }
             },
             "required": ["query"]
         }

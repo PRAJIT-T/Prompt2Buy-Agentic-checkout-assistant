@@ -1,37 +1,74 @@
 [
-    {
-        "id": "prod_001",
-        "name": "Premium Wireless Headphones",
-        "description": "Noise-cancelling over-ear headphones with 30-hour battery life.",
-        "price": 299.99,
-        "stock": 50
-    },
-    {
-        "id": "prod_002",
-        "name": "Smart Fitness Watch",
-        "description": "Track your steps, heart rate, and sleep with this sleek smartwatch.",
-        "price": 199.50,
-        "stock": 120
-    },
-    {
-        "id": "prod_003",
-        "name": "Portable Bluetooth Speaker",
-        "description": "Waterproof speaker with deep bass and 10-hour playtime.",
-        "price": 79.00,
-        "stock": 200
-    },
-    {
-        "id": "prod_004",
-        "name": "Ergonomic Mechanical Keyboard",
-        "description": "Tactile mechanical keyboard with customizable RGB lighting.",
-        "price": 149.99,
-        "stock": 75
-    },
-    {
-        "id": "prod_005",
-        "name": "Ultra HD 4K Monitor",
-        "description": "32-inch monitor with HDR support and color accuracy.",
-        "price": 599.00,
-        "stock": 30
-    }
+  {
+    "id": "prod_001",
+    "name": "Premium Wireless Headphones",
+    "description": "Noise-cancelling over-ear headphones with 30-hour battery life.",
+    "price": 299.99,
+    "stock": 50,
+    "category": "Headphones",
+    "image_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_006",
+    "name": "Studio Over-Ear Headphones",
+    "description": "Comfortable over-ear headphones for music, calls and focused work.",
+    "price": 249.0,
+    "stock": 40,
+    "category": "Headphones",
+    "image_url": "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_007",
+    "name": "True Wireless Earbuds",
+    "description": "Compact wireless earbuds for commuting and everyday listening.",
+    "price": 179.0,
+    "stock": 80,
+    "category": "Headphones",
+    "image_url": "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_002",
+    "name": "Smart Fitness Watch",
+    "description": "Track your steps, heart rate, and sleep with this sleek smartwatch.",
+    "price": 199.5,
+    "stock": 120,
+    "category": "Wearables",
+    "image_url": "https://images.unsplash.com/photo-1544117519-31a4b719223d?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_003",
+    "name": "Portable Bluetooth Speaker",
+    "description": "Water-resistant speaker with deep bass and 10-hour playtime.",
+    "price": 79.0,
+    "stock": 200,
+    "category": "Audio",
+    "image_url": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_008",
+    "name": "Compact Desk Speaker",
+    "description": "A small desktop speaker for music, podcasts and video calls.",
+    "price": 119.0,
+    "stock": 65,
+    "category": "Audio",
+    "image_url": "https://images.unsplash.com/photo-1589003077984-894e133dabad?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_004",
+    "name": "Ergonomic Mechanical Keyboard",
+    "description": "Tactile mechanical keyboard for a comfortable work setup.",
+    "price": 149.99,
+    "stock": 75,
+    "category": "Workspace",
+    "image_url": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=85"
+  },
+  {
+    "id": "prod_005",
+    "name": "Ultra HD 4K Monitor",
+    "description": "Large high-resolution display for work, study and entertainment.",
+    "price": 599.0,
+    "stock": 30,
+    "category": "Workspace",
+    "image_url": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=85"
+  }
 ]

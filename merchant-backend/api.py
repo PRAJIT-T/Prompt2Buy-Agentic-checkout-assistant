@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+import re
+
 from config import RAZORPAY_KEY_ID
 from cart import create_cart, add_item, get_cart, get_cart_total_price
 from orders import (
@@ -9,7 +12,9 @@ from orders import (
     get_order,
     get_order_by_razorpay_id,
     update_order_status,
-    cancel_order
+    cancel_order,
+    request_return,
+    simulate_return_refund,
 )
 from catalog import get_all_products, get_product_by_id
 from models import OrderStatus
@@ -23,6 +28,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:9000", "http://localhost:9000"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
+
 class AddToCartRequest(BaseModel):
     product_id: str
     quantity: int
@@ -32,27 +45,95 @@ class PaymentVerificationRequest(BaseModel):
     razorpay_order_id: str
     razorpay_signature: str
 
+class ReturnRequestBody(BaseModel):
+    reason: str = Field(min_length=3, max_length=250)
+
+
+SEARCH_STOP_WORDS = {
+    "a", "an", "and", "below", "buy", "find", "for", "me", "of",
+    "please", "product", "products", "show", "something", "the", "under",
+    "rupee", "rupees", "want", "with", "within",
+}
+
+SEARCH_CATEGORY_ALIASES = {
+    "audio": {"Audio", "Headphones"},
+    "electronic": {"Audio", "Headphones", "Wearables", "Workspace"},
+    "electronics": {"Audio", "Headphones", "Wearables", "Workspace"},
+    "earbud": {"Headphones"},
+    "earbuds": {"Headphones"},
+    "headphone": {"Headphones"},
+    "headphones": {"Headphones"},
+    "music": {"Audio", "Headphones"},
+    "sound": {"Audio", "Headphones"},
+    "speaker": {"Audio"},
+    "speakers": {"Audio"},
+    "watch": {"Wearables"},
+    "watches": {"Wearables"},
+}
+
+
+def _singularize(word: str) -> str:
+    if len(word) > 4 and word.endswith("ies"):
+        return f"{word[:-3]}y"
+    if len(word) > 4 and word.endswith("es"):
+        return word[:-2]
+    if len(word) > 3 and word.endswith("s"):
+        return word[:-1]
+    return word
+
+
+def _search_terms(value: str) -> set[str]:
+    words = re.findall(r"[a-z0-9]+", value.casefold())
+    return {
+        _singularize(word)
+        for word in words
+        if word not in SEARCH_STOP_WORDS and not word.isdigit()
+    }
+
+
+def _product_matches_query(query: str, product) -> bool:
+    terms = _search_terms(query)
+    if not terms:
+        return True
+
+    product_text = " ".join(
+        (product.name, product.description, product.category)
+    ).casefold()
+    product_terms = _search_terms(product_text)
+
+    for term in terms:
+        if term in SEARCH_CATEGORY_ALIASES:
+            if product.category in SEARCH_CATEGORY_ALIASES[term]:
+                return True
+        elif term in product_terms:
+            return True
+
+    return False
+
+
 @app.get("/products")
 def get_products(
     query: str = "",
-    max_price: float | None = None
+    max_price: float | None = None,
+    category: str | None = None,
 ):
     products = get_all_products()
 
     results = []
 
     for product in products:
-        matches_query = (
-            query.lower() in product.name.lower()
-            or query.lower() in product.description.lower()
-        )
+        matches_query = _product_matches_query(query, product)
 
         matches_price = (
             max_price is None
             or product.price <= max_price
         )
+        matches_category = (
+            category is None
+            or product.category.casefold() == category.casefold()
+        )
 
-        if matches_query and matches_price:
+        if matches_query and matches_price and matches_category:
             results.append(product.model_dump())
 
     return {
@@ -149,6 +230,26 @@ def cancel_order_api(order_id: str):
         return {"order_id": order.id, "status": order.status.value}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/orders/{order_id}/returns")
+def create_return_request(order_id: str, request: ReturnRequestBody):
+    try:
+        return request_return(order_id, request.reason)
+    except ValueError as e:
+        message = str(e)
+        status_code = 404 if "not found" in message.lower() else 400
+        raise HTTPException(status_code=status_code, detail=message)
+
+
+@app.post("/returns/{return_id}/simulate-refund")
+def simulate_refund(return_id: str):
+    try:
+        return simulate_return_refund(return_id)
+    except ValueError as e:
+        message = str(e)
+        status_code = 404 if "not found" in message.lower() else 400
+        raise HTTPException(status_code=status_code, detail=message)
+
 
 @app.get("/orders/{order_id}/invoice", response_class=HTMLResponse)
 def invoice(order_id: str):
@@ -317,7 +418,7 @@ def payment_page(order_id: str):
     <body>
 
         <div class="card">
-            <div class="icon">🔐</div>
+            <div class="icon" aria-hidden="true">Secure</div>
 
             <h1>Secure Checkout</h1>
 
